@@ -30,6 +30,34 @@ async function loadItems() {
   items = data.items || [];
 }
 
+// ---------- archive name ----------
+const archiveNameInput = document.getElementById('archiveNameInput');
+
+function applyArchiveName(name) {
+  archiveNameInput.value = name || '';
+  document.title = name || 'My ref archive';
+}
+
+async function loadArchiveName() {
+  const res = await fetch('/api/archive');
+  const data = await res.json();
+  applyArchiveName(data.name);
+}
+
+archiveNameInput.addEventListener('change', async () => {
+  const name = archiveNameInput.value.trim();
+  await fetch('/api/archive', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  applyArchiveName(name);
+});
+
+archiveNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') archiveNameInput.blur();
+});
+
 function formatDate(ts) {
   const d = new Date(ts);
   const pad = (n) => String(n).padStart(2, '0');
@@ -382,6 +410,7 @@ async function handleSave() {
 // ---------- init ----------
 async function init() {
   renderTabs();
+  loadArchiveName().catch(err => console.error(err));
   setStatus('불러오는 중...', '');
   try {
     await loadItems();
