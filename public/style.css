@@ -142,6 +142,14 @@ button:disabled {
 .status.error { color: #d00; }
 .status.ok { color: var(--blue); }
 
+.search-status {
+  min-height: 14px;
+  font-size: 12px;
+  color: var(--gray);
+  text-align: center;
+  margin: -6px 0 0;
+}
+
 .toolbar {
   margin-top: 32px;
   display: flex;

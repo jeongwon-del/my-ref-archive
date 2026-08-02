@@ -5,6 +5,7 @@ let items = [];
 let activeFilter = '전체';
 let searchTerm = '';
 let sortOrder = '최신순';
+let aiSearchIds = null; // null이면 일반 키워드 필터, 배열이면 AI 검색 결과(관련도 순)
 const expandedIds = new Set();
 
 function sortItems(list) {
@@ -153,9 +154,40 @@ function renderTabs() {
   tabsEl.appendChild(addBtn);
 }
 
-document.getElementById('searchInput').addEventListener('input', (e) => {
+const searchInput = document.getElementById('searchInput');
+const searchStatus = document.getElementById('searchStatus');
+
+searchInput.addEventListener('input', (e) => {
   searchTerm = e.target.value.trim().toLowerCase();
+  aiSearchIds = null;
+  searchStatus.textContent = '';
   renderList();
+});
+
+searchInput.addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const query = searchInput.value.trim();
+  if (!query) return;
+
+  searchStatus.textContent = 'AI가 관련 레퍼런스를 찾는 중...';
+  try {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '검색에 실패했어요.');
+
+    aiSearchIds = data.ids;
+    searchStatus.textContent = aiSearchIds.length > 0
+      ? `${aiSearchIds.length}개를 찾았어요.`
+      : '관련된 레퍼런스를 찾지 못했어요.';
+    renderList();
+  } catch (err) {
+    console.error(err);
+    searchStatus.textContent = '검색 중 오류가 발생했어요: ' + err.message;
+  }
 });
 
 document.getElementById('sortSelect').addEventListener('change', (e) => {
@@ -185,7 +217,10 @@ function renderList() {
     filtered = filtered.filter(i => i.category === activeFilter);
   }
 
-  if (searchTerm) {
+  if (aiSearchIds !== null) {
+    const rank = new Map(aiSearchIds.map((id, idx) => [id, idx]));
+    filtered = filtered.filter(i => rank.has(i.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id));
+  } else if (searchTerm) {
     filtered = filtered.filter(i =>
       i.title.toLowerCase().includes(searchTerm) ||
       i.summary.toLowerCase().includes(searchTerm)
