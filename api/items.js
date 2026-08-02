@@ -5,7 +5,7 @@
 // DELETE /api/items?id=...   → 항목 삭제
 
 import { getItems, setItems } from "../lib/redis.js";
-import { fetchPageText, analyzeWithClaude, CONTENT_TYPES, CATEGORIES } from "../lib/claude.js";
+import { fetchPageText, analyzeWithGemini, CONTENT_TYPES, CATEGORIES } from "../lib/gemini.js";
 
 export default async function handler(req, res) {
   try {
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       }
 
       const pageText = await fetchPageText(parsed.href);
-      const analysis = await analyzeWithClaude(parsed.href, pageText);
+      const analysis = await analyzeWithGemini(parsed.href, pageText);
 
       const item = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2),
