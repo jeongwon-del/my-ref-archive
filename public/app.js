@@ -1,4 +1,4 @@
-const CATEGORIES = ['카피/문구', '비주얼/디자인', '브랜드 무드', '마케팅 아이디어', '기타'];
+let categories = ['카피/문구', '비주얼/디자인', '브랜드 무드', '마케팅 아이디어', '기타'];
 const CONTENT_TYPES = ['영상', '이미지', '글'];
 
 let items = [];
@@ -30,7 +30,7 @@ async function loadItems() {
   items = data.items || [];
 }
 
-// ---------- archive name ----------
+// ---------- settings (archive name + categories) ----------
 const archiveNameInput = document.getElementById('archiveNameInput');
 
 function applyArchiveName(name) {
@@ -38,15 +38,28 @@ function applyArchiveName(name) {
   document.title = name || 'My ref archive';
 }
 
-async function loadArchiveName() {
-  const res = await fetch('/api/archive');
+async function loadSettings() {
+  const res = await fetch('/api/settings');
   const data = await res.json();
   applyArchiveName(data.name);
+  if (Array.isArray(data.categories) && data.categories.length > 0) {
+    categories = data.categories;
+  }
+}
+
+async function saveCategories() {
+  const res = await fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ categories }),
+  });
+  const data = await res.json();
+  categories = data.categories;
 }
 
 archiveNameInput.addEventListener('change', async () => {
   const name = archiveNameInput.value.trim();
-  await fetch('/api/archive', {
+  await fetch('/api/settings', {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name }),
@@ -64,12 +77,12 @@ function formatDate(ts) {
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
 }
 
-// ---------- filter tabs ----------
+// ---------- filter tabs (+ 카테고리 추가/삭제) ----------
 function renderTabs() {
   const tabsEl = document.getElementById('filterTabs');
-  const tabDefs = ['전체', '즐겨찾기', ...CATEGORIES];
   tabsEl.innerHTML = '';
-  tabDefs.forEach(name => {
+
+  ['전체', '즐겨찾기'].forEach(name => {
     const btn = document.createElement('button');
     btn.className = 'tab' + (name === '즐겨찾기' ? ' fav' : '') + (activeFilter === name ? ' active' : '');
     btn.textContent = name;
@@ -80,6 +93,64 @@ function renderTabs() {
     });
     tabsEl.appendChild(btn);
   });
+
+  categories.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'tab category-tab' + (activeFilter === name ? ' active' : '');
+    btn.addEventListener('click', () => {
+      activeFilter = name;
+      renderTabs();
+      renderList();
+    });
+
+    const label = document.createElement('span');
+    label.textContent = name;
+    btn.appendChild(label);
+
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'tab-remove';
+    removeBtn.textContent = '×';
+    removeBtn.title = '카테고리 삭제';
+    removeBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (categories.length <= 1) {
+        alert('카테고리는 최소 1개 이상 있어야 해요.');
+        return;
+      }
+      if (!confirm(`"${name}" 카테고리를 삭제할까요? 이미 이 카테고리로 저장된 레퍼런스는 남아있지만, 이 탭으로는 더 이상 필터링할 수 없어요.`)) return;
+      categories = categories.filter(c => c !== name);
+      await saveCategories();
+      if (activeFilter === name) activeFilter = '전체';
+      renderTabs();
+      renderList();
+    });
+    btn.appendChild(removeBtn);
+
+    tabsEl.appendChild(btn);
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'tab tab-add';
+  addBtn.textContent = '+ 카테고리';
+  addBtn.title = '카테고리 추가';
+  addBtn.addEventListener('click', async () => {
+    const name = prompt('추가할 카테고리 이름을 입력하세요 (예: 코드 스니펫)');
+    if (!name) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (categories.includes(trimmed)) {
+      alert('이미 있는 카테고리예요.');
+      return;
+    }
+    if (categories.length >= 12) {
+      alert('카테고리는 최대 12개까지 만들 수 있어요.');
+      return;
+    }
+    categories = [...categories, trimmed];
+    await saveCategories();
+    renderTabs();
+  });
+  tabsEl.appendChild(addBtn);
 }
 
 document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -185,13 +256,21 @@ function renderRow(item, num) {
   categoryCell.className = 'col-category';
   const categorySelect = document.createElement('select');
   categorySelect.className = 'category-select';
-  CATEGORIES.forEach(c => {
+  categories.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c;
     opt.textContent = c;
     if (item.category === c) opt.selected = true;
     categorySelect.appendChild(opt);
   });
+  // 카테고리가 삭제된 뒤에도 예전 값을 잃지 않도록, 목록에 없는 값이면 임시로 보여준다.
+  if (item.category && !categories.includes(item.category)) {
+    const opt = document.createElement('option');
+    opt.value = item.category;
+    opt.textContent = item.category;
+    opt.selected = true;
+    categorySelect.appendChild(opt);
+  }
   categorySelect.addEventListener('change', () => updateField(item.id, 'category', categorySelect.value));
   categoryCell.appendChild(categorySelect);
 
@@ -409,8 +488,12 @@ async function handleSave() {
 
 // ---------- init ----------
 async function init() {
+  try {
+    await loadSettings();
+  } catch (err) {
+    console.error(err);
+  }
   renderTabs();
-  loadArchiveName().catch(err => console.error(err));
   setStatus('불러오는 중...', '');
   try {
     await loadItems();

@@ -4,8 +4,8 @@
 //        { myInsight }, { favorite }, { title }, { summary }, { type }, { category }
 // DELETE /api/items?id=...   → 항목 삭제
 
-import { getItems, setItems } from "../lib/redis.js";
-import { fetchPageText, analyzeWithGemini, CONTENT_TYPES, CATEGORIES } from "../lib/gemini.js";
+import { getItems, setItems, getCategories } from "../lib/redis.js";
+import { fetchPageText, analyzeWithGemini, CONTENT_TYPES } from "../lib/gemini.js";
 
 export default async function handler(req, res) {
   try {
@@ -26,7 +26,8 @@ export default async function handler(req, res) {
       }
 
       const pageText = await fetchPageText(parsed.href);
-      const analysis = await analyzeWithGemini(parsed.href, pageText);
+      const categories = await getCategories();
+      const analysis = await analyzeWithGemini(parsed.href, pageText, categories);
 
       const item = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2),
@@ -60,7 +61,10 @@ export default async function handler(req, res) {
       if (typeof req.body?.title === "string" && req.body.title.trim()) item.title = req.body.title.trim();
       if (typeof req.body?.summary === "string") item.summary = req.body.summary;
       if (CONTENT_TYPES.includes(req.body?.type)) item.type = req.body.type;
-      if (CATEGORIES.includes(req.body?.category)) item.category = req.body.category;
+      if (typeof req.body?.category === "string") {
+        const categories = await getCategories();
+        if (categories.includes(req.body.category)) item.category = req.body.category;
+      }
 
       await setItems(items);
       return res.status(200).json({ item });

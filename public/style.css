@@ -202,6 +202,34 @@ button:disabled {
   font-weight: 700;
 }
 
+.category-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-remove {
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.4;
+}
+
+.tab-remove:hover {
+  opacity: 1;
+}
+
+.tab-add {
+  background: transparent;
+  box-shadow: none;
+  border: 1px dashed var(--accent);
+  color: var(--accent);
+  opacity: 0.6;
+}
+
+.tab-add:hover {
+  opacity: 1;
+}
+
 .table-wrap {
   margin-top: 24px;
   overflow-x: auto;
