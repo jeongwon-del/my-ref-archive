@@ -4,9 +4,12 @@
 const MIN_PASSWORD_LENGTH = 8;
 
 const statusEl = document.getElementById('adminStatus');
+const summaryEl = document.getElementById('adminSummary');
 const loginNotice = document.getElementById('loginNotice');
+const searchInput = document.getElementById('userSearch');
 const tableWrap = document.querySelector('.table-wrap');
 const listEl = document.getElementById('userList');
+const backupCard = document.getElementById('backupCard');
 
 let users = [];
 
@@ -22,11 +25,22 @@ function formatDate(ts) {
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
 }
 
-function renderList() {
-  tableWrap.hidden = users.length === 0;
+// 전체 목록이든 검색으로 걸러낸 일부든 여기로 들어온다.
+function renderList(list) {
   listEl.innerHTML = '';
 
-  users.forEach(user => {
+  if (list.length === 0) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 4;
+    cell.className = 'empty-msg';
+    cell.textContent = '일치하는 가입자가 없어요.';
+    row.appendChild(cell);
+    listEl.appendChild(row);
+    return;
+  }
+
+  list.forEach(user => {
     const row = document.createElement('tr');
 
     const emailCell = document.createElement('td');
@@ -65,6 +79,39 @@ function renderList() {
   });
 }
 
+// 검색은 서버에 다시 묻지 않고, 이미 받아둔 users 배열에서 이메일만 걸러낸다.
+function applyFilter() {
+  const term = searchInput.value.trim().toLowerCase();
+  renderList(term ? users.filter(user => user.email.toLowerCase().includes(term)) : users);
+}
+
+// users 가 바뀔 때마다(처음 로드, 삭제 후) 요약·표시 여부·표를 한 번에 다시 맞춘다.
+function refresh() {
+  const totalItems = users.reduce((sum, user) => sum + (user.itemCount || 0), 0);
+
+  summaryEl.textContent = users.length > 0
+    ? `가입자 ${users.length}명 · 저장된 레퍼런스 총 ${totalItems}개`
+    : '아직 가입한 사람이 없어요.';
+  summaryEl.hidden = false;
+
+  searchInput.hidden = users.length === 0;
+  tableWrap.hidden = users.length === 0;
+
+  applyFilter();
+}
+
+searchInput.addEventListener('input', applyFilter);
+
+// 세션 쿠키가 자동으로 실려가고, 서버가 Content-Disposition 을 붙여주니
+// 그냥 주소로 이동하면 브라우저가 알아서 파일로 저장한다.
+document.getElementById('backupJsonBtn').addEventListener('click', () => {
+  location.href = '/api/admin/export?format=json';
+});
+
+document.getElementById('backupCsvBtn').addEventListener('click', () => {
+  location.href = '/api/admin/export?format=csv';
+});
+
 async function deleteUser(email) {
   if (!confirm(`${email} 계정을 삭제할까요? 이 사람이 저장한 레퍼런스도 모두 함께 사라지고, 되돌릴 수 없어요.`)) return;
 
@@ -74,7 +121,7 @@ async function deleteUser(email) {
     if (!res.ok) throw new Error(data.error || '삭제에 실패했어요.');
 
     users = users.filter(u => u.email !== email);
-    renderList();
+    refresh();
     setStatus(`${email} 계정을 삭제했어요.`, 'ok');
   } catch (err) {
     console.error(err);
@@ -131,8 +178,10 @@ async function init() {
   }
 
   users = data.users || [];
-  renderList();
-  setStatus(users.length > 0 ? `가입자 ${users.length}명` : '아직 가입한 사람이 없어요.', '');
+  backupCard.hidden = false;
+  refresh();
+  // 가입자 수는 위 요약 줄이 계속 보여주니, 상태 줄은 비워두고 안내·오류 전용으로 남긴다.
+  setStatus('', '');
 }
 
 init();

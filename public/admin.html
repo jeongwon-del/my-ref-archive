@@ -24,6 +24,63 @@
     font-weight: 600;
     text-decoration: none;
   }
+
+  /* 전체 현황 한 줄 — 아래 표가 무엇의 목록인지 먼저 알려준다. */
+  .admin-summary {
+    margin: 0;
+    padding: 0 8px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  /* 메인 화면 검색창(#searchInput)과 같은 알약 모양. */
+  #userSearch {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px 18px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--white);
+    box-shadow: var(--shadow);
+  }
+
+  /* 표 안의 삭제·재설정(한 사람 단위)과 헷갈리지 않게 별도 카드로 떼어놓는다. */
+  .backup-card {
+    margin-top: 32px;
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px 24px 20px;
+  }
+
+  .backup-card .field-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: var(--gray);
+  }
+
+  .backup-card .hint-text {
+    margin: 0 0 14px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--gray);
+  }
+
+  /* 내보내기는 보조 동작이라 크림색 알약으로 한 톤 낮춘다. */
+  .backup-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .backup-row button {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 18px;
+    font-size: 13px;
+    background: var(--tint);
+    color: var(--black);
+  }
 </style>
 
 <header class="topbar">
@@ -35,10 +92,13 @@
 </header>
 
 <main>
+  <p id="adminSummary" class="admin-summary" hidden></p>
   <p id="adminStatus" class="status"></p>
   <p id="loginNotice" class="empty-msg" hidden>
     먼저 <a href="/">로그인</a> 해주세요.
   </p>
+
+  <input id="userSearch" type="text" placeholder="이메일로 찾기" autocomplete="off" hidden />
 
   <div class="table-wrap" hidden>
     <table class="ref-table">
@@ -52,6 +112,15 @@
       </thead>
       <tbody id="userList"></tbody>
     </table>
+  </div>
+
+  <div id="backupCard" class="backup-card" hidden>
+    <p class="field-label">전체 데이터 백업</p>
+    <p class="hint-text">가입한 모든 사람의 레퍼런스를 파일 하나로 내려받아요. CSV 는 줄마다 이메일이 붙어서 엑셀이나 구글 시트에서 바로 열려요.</p>
+    <div class="backup-row">
+      <button id="backupJsonBtn" type="button">전체 JSON 백업</button>
+      <button id="backupCsvBtn" type="button">전체 CSV 백업</button>
+    </div>
   </div>
 </main>
 
