@@ -1,0 +1,138 @@
+// 관리자 페이지 — ADMIN_EMAILS 에 등록된 계정으로 로그인했을 때만 목록이 보인다.
+// 메인 아카이브 화면(app.js)과는 완전히 분리되어 있다.
+
+const MIN_PASSWORD_LENGTH = 8;
+
+const statusEl = document.getElementById('adminStatus');
+const loginNotice = document.getElementById('loginNotice');
+const tableWrap = document.querySelector('.table-wrap');
+const listEl = document.getElementById('userList');
+
+let users = [];
+
+function setStatus(text, type) {
+  statusEl.textContent = text;
+  statusEl.className = 'status' + (type ? ' ' + type : '');
+}
+
+function formatDate(ts) {
+  if (!ts) return '-';
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+}
+
+function renderList() {
+  tableWrap.hidden = users.length === 0;
+  listEl.innerHTML = '';
+
+  users.forEach(user => {
+    const row = document.createElement('tr');
+
+    const emailCell = document.createElement('td');
+    emailCell.className = 'col-email';
+    emailCell.textContent = user.email;
+
+    const joinedCell = document.createElement('td');
+    joinedCell.className = 'col-joined';
+    joinedCell.textContent = formatDate(user.createdAt);
+
+    const countCell = document.createElement('td');
+    countCell.className = 'col-count';
+    countCell.textContent = `${user.itemCount}개`;
+
+    const manageCell = document.createElement('td');
+    manageCell.className = 'col-manage';
+
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'reset-btn';
+    resetBtn.textContent = '비밀번호 재설정';
+    resetBtn.addEventListener('click', () => resetPassword(user.email));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.textContent = '삭제';
+    deleteBtn.addEventListener('click', () => deleteUser(user.email));
+
+    manageCell.appendChild(resetBtn);
+    manageCell.appendChild(deleteBtn);
+
+    row.appendChild(emailCell);
+    row.appendChild(joinedCell);
+    row.appendChild(countCell);
+    row.appendChild(manageCell);
+    listEl.appendChild(row);
+  });
+}
+
+async function deleteUser(email) {
+  if (!confirm(`${email} 계정을 삭제할까요? 이 사람이 저장한 레퍼런스도 모두 함께 사라지고, 되돌릴 수 없어요.`)) return;
+
+  try {
+    const res = await fetch(`/api/admin/users?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '삭제에 실패했어요.');
+
+    users = users.filter(u => u.email !== email);
+    renderList();
+    setStatus(`${email} 계정을 삭제했어요.`, 'ok');
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message, 'error');
+  }
+}
+
+async function resetPassword(email) {
+  const newPassword = prompt(`${email} 계정의 새 비밀번호를 입력하세요 (${MIN_PASSWORD_LENGTH}자 이상)`);
+  if (!newPassword) return;
+  if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    setStatus(`비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상으로 만들어주세요.`, 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/reset-password', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '변경에 실패했어요.');
+
+    setStatus(`${email} 비밀번호를 바꿨어요. 이 앱은 메일을 보내지 못하니 새 비밀번호를 직접 알려주세요.`, 'ok');
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message, 'error');
+  }
+}
+
+async function init() {
+  setStatus('불러오는 중...', '');
+
+  let res;
+  try {
+    res = await fetch('/api/admin/users');
+  } catch (err) {
+    console.error(err);
+    setStatus('서버에 연결하지 못했어요. 잠시 후 새로고침해주세요.', 'error');
+    return;
+  }
+
+  if (res.status === 401) {
+    loginNotice.hidden = false;
+    setStatus('로그인이 필요해요.', 'error');
+    return;
+  }
+
+  const data = await res.json();
+  if (!res.ok) {
+    setStatus(data.error || '목록을 불러오지 못했어요.', 'error');
+    return;
+  }
+
+  users = data.users || [];
+  renderList();
+  setStatus(users.length > 0 ? `가입자 ${users.length}명` : '아직 가입한 사람이 없어요.', '');
+}
+
+init();

@@ -1,0 +1,58 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>관리자 · My ref archive</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+  /* 아카이브 표와 열 구성만 다르다. 색·모양은 style.css 를 그대로 쓴다. */
+  .ref-table { min-width: 640px; }
+  .col-email { width: auto; font-weight: 600; word-break: break-all; }
+  .col-joined { width: 110px; white-space: nowrap; color: var(--gray); font-size: 12px; }
+  .col-count { width: 130px; white-space: nowrap; color: var(--gray); font-size: 12px; }
+  .col-manage { width: 170px; white-space: nowrap; }
+  .reset-btn { padding: 6px 14px; font-size: 12px; margin-right: 6px; }
+
+  main a { color: var(--blue); }
+
+  .archive-link {
+    padding: 7px 16px;
+    border-radius: var(--radius-pill);
+    background: var(--tint);
+    box-shadow: var(--shadow-sm);
+    color: var(--black);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+</style>
+
+<header class="topbar">
+  <div class="account-row">
+    <a class="archive-link" href="/">아카이브로</a>
+  </div>
+  <h1>관리자</h1>
+  <p class="archive-name-hint">가입한 사람들을 보고 계정을 정리할 수 있어요</p>
+</header>
+
+<main>
+  <p id="adminStatus" class="status"></p>
+  <p id="loginNotice" class="empty-msg" hidden>
+    먼저 <a href="/">로그인</a> 해주세요.
+  </p>
+
+  <div class="table-wrap" hidden>
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th class="col-email">이메일</th>
+          <th class="col-joined">가입일</th>
+          <th class="col-count">저장한 레퍼런스</th>
+          <th class="col-manage"></th>
+        </tr>
+      </thead>
+      <tbody id="userList"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="admin.js"></script>
