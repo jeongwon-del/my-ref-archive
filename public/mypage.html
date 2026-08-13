@@ -1,0 +1,62 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마이페이지 · My ref archive</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+  /* 로그인 화면의 카드·입력창 모양을 그대로 쓰고, 왼쪽 정렬만 바꾼다. */
+  .auth-card { margin: 0 auto; text-align: left; }
+
+  .field-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: var(--gray);
+  }
+
+  .field-value {
+    margin: 0 0 24px;
+    font-size: 14px;
+    font-weight: 600;
+    word-break: break-all;
+  }
+
+  /* 카드와 같은 폭으로 맞춰서 입력창 바로 아래에 붙어 보이게 한다. */
+  #mypageStatus {
+    max-width: 380px;
+    margin: 12px auto 0;
+  }
+
+  main a { color: var(--blue); }
+</style>
+
+<header class="topbar">
+  <div class="account-row">
+    <a class="account-link" href="/">아카이브로</a>
+    <button id="logoutBtn" class="logout-btn" type="button">로그아웃</button>
+  </div>
+  <h1>마이페이지</h1>
+  <p class="archive-name-hint">비밀번호를 바꿀 수 있어요</p>
+</header>
+
+<main>
+  <p id="loginNotice" class="empty-msg" hidden>
+    먼저 <a href="/">로그인</a> 해주세요.
+  </p>
+
+  <div id="accountCard" class="auth-card" hidden>
+    <p class="field-label">로그인한 계정</p>
+    <p id="accountEmail" class="field-value"></p>
+
+    <p class="field-label">비밀번호 변경</p>
+    <form id="passwordForm" class="auth-form">
+      <input id="currentPassword" type="password" placeholder="현재 비밀번호" autocomplete="current-password" required />
+      <input id="newPassword" type="password" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password" required />
+      <input id="newPasswordConfirm" type="password" placeholder="새 비밀번호 확인" autocomplete="new-password" required />
+      <button id="submitBtn" type="submit">비밀번호 변경</button>
+    </form>
+  </div>
+
+  <p id="mypageStatus" class="status"></p>
+</main>
+
+<script src="mypage.js"></script>

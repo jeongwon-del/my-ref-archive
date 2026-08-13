@@ -140,6 +140,19 @@ body {
   color: var(--black);
 }
 
+/* 계정 줄에 놓이는 링크 — 옆의 로그아웃 버튼과 같은 알약 모양으로 보이게 한다.
+   (a 태그는 button 선택자의 모양을 물려받지 못하므로 여기서 다시 지정한다) */
+.account-link {
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--tint);
+  box-shadow: var(--shadow-sm);
+  color: var(--black);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .topbar h1 {
   font-size: 40px;
   font-weight: 800;
