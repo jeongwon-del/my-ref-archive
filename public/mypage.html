@@ -20,6 +20,66 @@
     word-break: break-all;
   }
 
+  /* 카드가 여러 장 쌓이므로 사이를 띄우고, 카드 마지막 줄의 아래 여백은 없앤다. */
+  .auth-card + .auth-card { margin-top: 16px; }
+  .auth-card > :last-child { margin-bottom: 0; }
+
+  .hint-text {
+    margin: 0 0 14px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--gray);
+  }
+
+  /* 카테고리별 개수 — 이름은 왼쪽, 개수는 오른쪽에 붙는 한 줄짜리 목록. */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .stat-count { font-weight: 700; }
+
+  .export-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* 내보내기는 보조 동작이라 크림색 알약으로 한 톤 낮춘다. */
+  .export-row button {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 18px;
+    font-size: 13px;
+    background: var(--tint);
+    color: var(--black);
+  }
+
+  /* 되돌릴 수 없는 동작이므로 다른 카드와 확실히 떨어뜨리고 빨간 테두리로 구분한다. */
+  #dangerCard { margin-top: 32px; }
+
+  .danger-btn {
+    width: 100%;
+    padding: 12px 18px;
+    font-size: 13px;
+    background: var(--white);
+    color: #d00;
+    box-shadow: none;
+    outline: 1px solid #d00;
+    outline-offset: -1px;
+  }
+
+  .danger-btn:hover {
+    background: #d00;
+    color: var(--white);
+    opacity: 1;
+  }
+
   /* 카드와 같은 폭으로 맞춰서 입력창 바로 아래에 붙어 보이게 한다. */
   #mypageStatus {
     max-width: 380px;
@@ -35,13 +95,21 @@
     <button id="logoutBtn" class="logout-btn" type="button">로그아웃</button>
   </div>
   <h1>마이페이지</h1>
-  <p class="archive-name-hint">비밀번호를 바꿀 수 있어요</p>
+  <p class="archive-name-hint">저장 현황을 보고, 데이터를 내려받고, 비밀번호를 바꿀 수 있어요</p>
 </header>
 
 <main>
   <p id="loginNotice" class="empty-msg" hidden>
     먼저 <a href="/">로그인</a> 해주세요.
   </p>
+
+  <div id="statsCard" class="auth-card" hidden>
+    <p class="field-label">저장 현황</p>
+    <p id="statsSummary" class="field-value"></p>
+
+    <p class="field-label">카테고리별</p>
+    <div id="categoryStats"></div>
+  </div>
 
   <div id="accountCard" class="auth-card" hidden>
     <p class="field-label">로그인한 계정</p>
@@ -54,6 +122,21 @@
       <input id="newPasswordConfirm" type="password" placeholder="새 비밀번호 확인" autocomplete="new-password" required />
       <button id="submitBtn" type="submit">비밀번호 변경</button>
     </form>
+  </div>
+
+  <div id="exportCard" class="auth-card" hidden>
+    <p class="field-label">데이터 내보내기</p>
+    <p class="hint-text">저장한 레퍼런스를 파일로 내려받아 따로 보관할 수 있어요. CSV 는 엑셀이나 구글 시트에서 바로 열려요.</p>
+    <div class="export-row">
+      <button id="exportJsonBtn" type="button">JSON으로 내보내기</button>
+      <button id="exportCsvBtn" type="button">CSV로 내보내기</button>
+    </div>
+  </div>
+
+  <div id="dangerCard" class="auth-card" hidden>
+    <p class="field-label">회원 탈퇴</p>
+    <p class="hint-text">계정과 저장한 레퍼런스가 모두 삭제되고, 되돌릴 수 없어요. 필요한 자료는 먼저 내보내 두세요.</p>
+    <button id="deleteAccountBtn" class="danger-btn" type="button">회원 탈퇴</button>
   </div>
 
   <p id="mypageStatus" class="status"></p>

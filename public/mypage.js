@@ -1,10 +1,16 @@
-// 마이페이지 — 로그인한 본인이 자기 비밀번호를 바꾸는 화면.
+// 마이페이지 — 로그인한 본인이 저장 현황을 보고, 데이터를 내보내고,
+// 비밀번호를 바꾸거나 탈퇴하는 화면.
 // 관리자 페이지(admin.js)처럼 메인 아카이브 화면(app.js)과는 분리되어 있다.
 
 const MIN_PASSWORD_LENGTH = 8;
 
 const statusEl = document.getElementById('mypageStatus');
 const loginNotice = document.getElementById('loginNotice');
+const statsCard = document.getElementById('statsCard');
+const statsSummary = document.getElementById('statsSummary');
+const categoryStats = document.getElementById('categoryStats');
+const exportCard = document.getElementById('exportCard');
+const dangerCard = document.getElementById('dangerCard');
 const accountCard = document.getElementById('accountCard');
 const accountEmail = document.getElementById('accountEmail');
 const passwordForm = document.getElementById('passwordForm');
@@ -55,6 +61,80 @@ passwordForm.addEventListener('submit', async (e) => {
   }
 });
 
+// 카테고리 목록은 사람마다 다르니 실제 저장된 값에서 뽑아 개수를 센다.
+function renderStats(items) {
+  const favoriteCount = items.filter(item => item.favorite).length;
+  statsSummary.textContent = `총 ${items.length}개 저장 · 즐겨찾기 ${favoriteCount}개`;
+
+  const counts = new Map();
+  items.forEach(item => {
+    const category = item.category || '분류 없음';
+    counts.set(category, (counts.get(category) || 0) + 1);
+  });
+
+  categoryStats.innerHTML = '';
+
+  if (counts.size === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'hint-text';
+    empty.textContent = '아직 저장한 레퍼런스가 없어요.';
+    categoryStats.appendChild(empty);
+    return;
+  }
+
+  [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([category, count]) => {
+      const row = document.createElement('div');
+      row.className = 'stat-row';
+
+      const name = document.createElement('span');
+      name.textContent = category;
+
+      const value = document.createElement('span');
+      value.className = 'stat-count';
+      value.textContent = `${count}개`;
+
+      row.appendChild(name);
+      row.appendChild(value);
+      categoryStats.appendChild(row);
+    });
+}
+
+// 세션 쿠키가 자동으로 실려가고, 서버가 Content-Disposition 을 붙여주니
+// 그냥 주소로 이동하면 브라우저가 알아서 파일로 저장한다.
+document.getElementById('exportJsonBtn').addEventListener('click', () => {
+  location.href = '/api/export?format=json';
+});
+
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  location.href = '/api/export?format=csv';
+});
+
+document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+  if (!confirm('정말 탈퇴할까요? 계정과 저장한 레퍼런스가 모두 영구히 삭제되고, 되돌릴 수 없어요.')) return;
+
+  const password = prompt('확인을 위해 현재 비밀번호를 입력하세요.');
+  if (!password) return;
+
+  setStatus('탈퇴 처리 중...', '');
+
+  try {
+    const res = await fetch('/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '탈퇴에 실패했어요.');
+
+    location.href = '/';
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message, 'error');
+  }
+});
+
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -88,6 +168,21 @@ async function init() {
 
   accountEmail.textContent = data.email;
   accountCard.hidden = false;
+  exportCard.hidden = false;
+  dangerCard.hidden = false;
+
+  // 통계는 있으면 좋은 정보라서, 못 불러와도 나머지 화면은 그대로 쓸 수 있게 둔다.
+  try {
+    const itemsRes = await fetch('/api/items');
+    const itemsData = await itemsRes.json();
+    if (!itemsRes.ok) throw new Error(itemsData.error || '목록을 불러오지 못했어요.');
+
+    renderStats(itemsData.items || []);
+    statsCard.hidden = false;
+  } catch (err) {
+    console.error(err);
+    setStatus('저장 현황을 불러오지 못했어요.', 'error');
+  }
 }
 
 init();
