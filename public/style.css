@@ -54,15 +54,8 @@ body {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  margin: 0;
+  margin: 0 0 28px;
   color: var(--accent);
-}
-
-.auth-tagline {
-  margin: 12px 0 28px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--gray);
 }
 
 .auth-form {
