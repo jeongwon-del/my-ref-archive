@@ -1,6 +1,17 @@
 let categories = ['카피/문구', '비주얼/디자인', '브랜드 무드', '마케팅 아이디어', '기타'];
 const CONTENT_TYPES = ['영상', '이미지', '글'];
 
+// 아카이브 API 호출은 모두 이걸 거친다. 오래 켜둔 탭에서 세션이 만료되면
+// 조용히 실패하는 대신 로그인 화면으로 되돌린다.
+async function fetchApi(...args) {
+  const res = await fetch(...args);
+  if (res.status === 401) {
+    showAuthScreen('세션이 만료됐어요. 다시 로그인해주세요.');
+    throw new Error('로그인이 필요해요.');
+  }
+  return res;
+}
+
 let items = [];
 let activeFilter = '전체';
 let searchTerm = '';
@@ -26,7 +37,7 @@ function sortItems(list) {
 }
 
 async function loadItems() {
-  const res = await fetch('/api/items');
+  const res = await fetchApi('/api/items');
   const data = await res.json();
   items = data.items || [];
 }
@@ -40,7 +51,7 @@ function applyArchiveName(name) {
 }
 
 async function loadSettings() {
-  const res = await fetch('/api/settings');
+  const res = await fetchApi('/api/settings');
   const data = await res.json();
   applyArchiveName(data.name);
   if (Array.isArray(data.categories) && data.categories.length > 0) {
@@ -49,7 +60,7 @@ async function loadSettings() {
 }
 
 async function saveCategories() {
-  const res = await fetch('/api/settings', {
+  const res = await fetchApi('/api/settings', {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ categories }),
@@ -60,7 +71,7 @@ async function saveCategories() {
 
 archiveNameInput.addEventListener('change', async () => {
   const name = archiveNameInput.value.trim();
-  await fetch('/api/settings', {
+  await fetchApi('/api/settings', {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name }),
@@ -171,7 +182,7 @@ searchInput.addEventListener('keydown', async (e) => {
 
   searchStatus.textContent = 'AI가 관련 레퍼런스를 찾는 중...';
   try {
-    const res = await fetch('/api/search', {
+    const res = await fetchApi('/api/search', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ query }),
@@ -443,7 +454,7 @@ async function updateField(id, field, value) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   item[field] = value;
-  await fetch(`/api/items?id=${encodeURIComponent(id)}`, {
+  await fetchApi(`/api/items?id=${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ [field]: value }),
@@ -456,7 +467,7 @@ async function toggleFavorite(id) {
   const favorite = !item.favorite;
   item.favorite = favorite;
   renderList();
-  await fetch(`/api/items?id=${encodeURIComponent(id)}`, {
+  await fetchApi(`/api/items?id=${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ favorite }),
@@ -468,7 +479,7 @@ async function deleteItem(id) {
   items = items.filter(i => i.id !== id);
   expandedIds.delete(id);
   renderList();
-  await fetch(`/api/items?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await fetchApi(`/api/items?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 // ---------- save flow ----------
@@ -501,7 +512,7 @@ async function handleSave() {
   setStatus('링크 내용을 분석하고 AI가 정리하는 중이에요...', '');
 
   try {
-    const res = await fetch('/api/items', {
+    const res = await fetchApi('/api/items', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ url }),
@@ -521,8 +532,92 @@ async function handleSave() {
   }
 }
 
+// ---------- 로그인 / 회원가입 ----------
+const authScreen = document.getElementById('authScreen');
+const appScreen = document.getElementById('appScreen');
+const authForm = document.getElementById('authForm');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authSubmit = document.getElementById('authSubmit');
+const authToggle = document.getElementById('authToggle');
+const authError = document.getElementById('authError');
+const accountEmail = document.getElementById('accountEmail');
+
+let authMode = 'login'; // 'login' 또는 'signup'
+
+function applyAuthMode() {
+  const isLogin = authMode === 'login';
+  authSubmit.textContent = isLogin ? '로그인' : '회원가입';
+  authToggle.textContent = isLogin ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인';
+  authPassword.placeholder = isLogin ? '비밀번호' : '비밀번호 (8자 이상)';
+  authPassword.autocomplete = isLogin ? 'current-password' : 'new-password';
+  authError.textContent = '';
+}
+
+authToggle.addEventListener('click', () => {
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  applyAuthMode();
+});
+
+function showAuthScreen(message) {
+  authScreen.hidden = false;
+  appScreen.hidden = true;
+  document.title = 'My ref archive';
+  authError.textContent = message || '';
+  authPassword.value = '';
+}
+
+authForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+  if (!email || !password) return;
+  if (authMode === 'signup' && password.length < 8) {
+    authError.textContent = '비밀번호는 8자 이상으로 만들어주세요.';
+    return;
+  }
+
+  authSubmit.disabled = true;
+  authError.textContent = authMode === 'login' ? '로그인 중...' : '가입 중...';
+
+  try {
+    const res = await fetch(`/api/auth/${authMode}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '잠시 후 다시 시도해주세요.');
+
+    authError.textContent = '';
+    authPassword.value = '';
+    await enterArchive(data.email);
+  } catch (err) {
+    console.error(err);
+    authError.textContent = err.message;
+  } finally {
+    authSubmit.disabled = false;
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+  } catch (err) {
+    console.error(err);
+  }
+  items = [];
+  expandedIds.clear();
+  showAuthScreen('');
+});
+
 // ---------- init ----------
-async function init() {
+async function enterArchive(email) {
+  authScreen.hidden = true;
+  appScreen.hidden = false;
+  accountEmail.textContent = email || '';
+
   try {
     await loadSettings();
   } catch (err) {
@@ -538,6 +633,22 @@ async function init() {
     setStatus('목록을 불러오지 못했어요: ' + err.message, 'error');
   }
   renderList();
+}
+
+async function init() {
+  applyAuthMode();
+  try {
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) {
+      showAuthScreen('');
+      return;
+    }
+    const data = await res.json();
+    await enterArchive(data.email);
+  } catch (err) {
+    console.error(err);
+    showAuthScreen('서버에 연결하지 못했어요. 잠시 후 새로고침해주세요.');
+  }
 }
 
 init();

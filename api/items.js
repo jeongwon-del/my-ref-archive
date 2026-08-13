@@ -5,12 +5,16 @@
 // DELETE /api/items?id=...   → 항목 삭제
 
 import { getItems, setItems, getCategories } from "../lib/redis.js";
+import { requireAuth } from "../lib/auth.js";
 import { fetchPageText, analyzeWithGemini, CONTENT_TYPES } from "../lib/gemini.js";
 
 export default async function handler(req, res) {
   try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
     if (req.method === "GET") {
-      const items = await getItems();
+      const items = await getItems(userId);
       return res.status(200).json({ items });
     }
 
@@ -26,7 +30,7 @@ export default async function handler(req, res) {
       }
 
       const pageText = await fetchPageText(parsed.href);
-      const categories = await getCategories();
+      const categories = await getCategories(userId);
       const analysis = await analyzeWithGemini(parsed.href, pageText, categories);
 
       const item = {
@@ -42,9 +46,9 @@ export default async function handler(req, res) {
         createdAt: Date.now(),
       };
 
-      const items = await getItems();
+      const items = await getItems(userId);
       items.push(item);
-      await setItems(items);
+      await setItems(userId, items);
       return res.status(200).json({ item });
     }
 
@@ -52,7 +56,7 @@ export default async function handler(req, res) {
       const id = req.query.id;
       if (!id) return res.status(400).json({ error: "id가 필요해요." });
 
-      const items = await getItems();
+      const items = await getItems(userId);
       const item = items.find((i) => i.id === id);
       if (!item) return res.status(404).json({ error: "항목을 찾을 수 없어요." });
 
@@ -62,11 +66,11 @@ export default async function handler(req, res) {
       if (typeof req.body?.summary === "string") item.summary = req.body.summary;
       if (CONTENT_TYPES.includes(req.body?.type)) item.type = req.body.type;
       if (typeof req.body?.category === "string") {
-        const categories = await getCategories();
+        const categories = await getCategories(userId);
         if (categories.includes(req.body.category)) item.category = req.body.category;
       }
 
-      await setItems(items);
+      await setItems(userId, items);
       return res.status(200).json({ item });
     }
 
@@ -74,9 +78,9 @@ export default async function handler(req, res) {
       const id = req.query.id;
       if (!id) return res.status(400).json({ error: "id가 필요해요." });
 
-      const items = await getItems();
+      const items = await getItems(userId);
       const next = items.filter((i) => i.id !== id);
-      await setItems(next);
+      await setItems(userId, next);
       return res.status(200).json({ ok: true });
     }
 

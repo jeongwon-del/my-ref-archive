@@ -1,52 +1,77 @@
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My ref archive</title>
 <link rel="stylesheet" href="style.css">
 
-<header class="topbar">
-  <h1>
-    <input id="archiveNameInput" class="archive-name-input" placeholder="My ref archive" maxlength="40" />
-  </h1>
-  <p class="archive-name-hint">클릭해서 나만의 아카이브 이름을 지어보세요</p>
-</header>
+<!-- 로그인 / 회원가입 화면 — 로그인 상태가 아닐 때만 보인다 -->
+<div id="authScreen" class="auth-screen" hidden>
+  <div class="auth-card">
+    <h1 class="auth-logo">My ref archive</h1>
+    <p class="auth-tagline">링크를 저장하면 AI가 제목·요약·카테고리를 붙여주는<br>나만의 레퍼런스 아카이브</p>
 
-<main>
-  <section class="save-box">
-    <input id="urlInput" type="url" placeholder="저장하고 싶은 링크를 붙여넣으세요 (https://...)" />
-    <button id="saveBtn">저장</button>
-  </section>
-  <p id="saveStatus" class="status"></p>
+    <form id="authForm" class="auth-form">
+      <input id="authEmail" type="email" placeholder="이메일" autocomplete="email" required />
+      <input id="authPassword" type="password" placeholder="비밀번호 (8자 이상)" autocomplete="current-password" required />
+      <button id="authSubmit" type="submit">로그인</button>
+    </form>
 
-  <section class="toolbar">
-    <input id="searchInput" type="text" placeholder="신제품 런칭할 때 참고할 레퍼런스 찾아줘" />
-    <p id="searchStatus" class="search-status"></p>
-    <div id="filterTabs" class="filter-tabs"></div>
-    <div class="sort-row">
-      <select id="sortSelect" class="sort-select">
-        <option value="최신순">최신순</option>
-        <option value="오래된순">오래된순</option>
-        <option value="즐겨찾기 우선">즐겨찾기 우선</option>
-        <option value="제목순">제목순 (가나다)</option>
-      </select>
-    </div>
-  </section>
-
-  <div class="table-wrap">
-    <table class="ref-table">
-      <thead>
-        <tr>
-          <th class="col-num"></th>
-          <th class="col-star"></th>
-          <th class="col-date">날짜</th>
-          <th class="col-type">유형</th>
-          <th class="col-category">카테고리</th>
-          <th class="col-title">제목</th>
-          <th class="col-actions"></th>
-        </tr>
-      </thead>
-      <tbody id="list"></tbody>
-    </table>
+    <p id="authError" class="auth-error"></p>
+    <button id="authToggle" class="auth-toggle" type="button">계정이 없으신가요? 회원가입</button>
   </div>
-  <p id="emptyMsg" class="empty-msg" hidden>아직 저장된 레퍼런스가 없어요. 위에 링크를 붙여넣어보세요.</p>
-</main>
+</div>
+
+<!-- 아카이브 화면 — 로그인한 뒤에 보인다 -->
+<div id="appScreen" hidden>
+  <header class="topbar">
+    <div class="account-row">
+      <span id="accountEmail" class="account-email"></span>
+      <button id="logoutBtn" class="logout-btn" type="button">로그아웃</button>
+    </div>
+    <h1>
+      <input id="archiveNameInput" class="archive-name-input" placeholder="My ref archive" maxlength="40" />
+    </h1>
+    <p class="archive-name-hint">클릭해서 나만의 아카이브 이름을 지어보세요</p>
+  </header>
+
+  <main>
+    <section class="save-box">
+      <input id="urlInput" type="url" placeholder="저장하고 싶은 링크를 붙여넣으세요 (https://...)" />
+      <button id="saveBtn">저장</button>
+    </section>
+    <p id="saveStatus" class="status"></p>
+
+    <section class="toolbar">
+      <input id="searchInput" type="text" placeholder="신제품 런칭할 때 참고할 레퍼런스 찾아줘" />
+      <p id="searchStatus" class="search-status"></p>
+      <div id="filterTabs" class="filter-tabs"></div>
+      <div class="sort-row">
+        <select id="sortSelect" class="sort-select">
+          <option value="최신순">최신순</option>
+          <option value="오래된순">오래된순</option>
+          <option value="즐겨찾기 우선">즐겨찾기 우선</option>
+          <option value="제목순">제목순 (가나다)</option>
+        </select>
+      </div>
+    </section>
+
+    <div class="table-wrap">
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th class="col-num"></th>
+            <th class="col-star"></th>
+            <th class="col-date">날짜</th>
+            <th class="col-type">유형</th>
+            <th class="col-category">카테고리</th>
+            <th class="col-title">제목</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="list"></tbody>
+      </table>
+    </div>
+    <p id="emptyMsg" class="empty-msg" hidden>아직 저장된 레퍼런스가 없어요. 위에 링크를 붙여넣어보세요.</p>
+  </main>
+</div>
 
 <script src="app.js"></script>
