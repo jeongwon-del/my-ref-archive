@@ -5,11 +5,18 @@ const MIN_PASSWORD_LENGTH = 8;
 
 const statusEl = document.getElementById('adminStatus');
 const summaryEl = document.getElementById('adminSummary');
-const loginNotice = document.getElementById('loginNotice');
 const searchInput = document.getElementById('userSearch');
 const tableWrap = document.querySelector('.table-wrap');
 const listEl = document.getElementById('userList');
 const backupCard = document.getElementById('backupCard');
+
+const authScreen = document.getElementById('authScreen');
+const adminScreen = document.getElementById('adminScreen');
+const authForm = document.getElementById('authForm');
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authSubmit = document.getElementById('authSubmit');
+const authError = document.getElementById('authError');
 
 let users = [];
 
@@ -164,6 +171,45 @@ async function resetPassword(email) {
   }
 }
 
+// 로그인 안 됐거나(401), 로그인은 했지만 관리자가 아니면(403) 이 화면부터 보여준다.
+// 세션 쿠키를 이 페이지랑 메인 아카이브가 같이 쓰다 보니, 카카오 계정처럼 관리자가 아닌
+// 계정으로 로그인돼 있는 채로 여기 들어올 수도 있어서 403 도 로그인 화면으로 보낸다.
+function showLogin(message) {
+  authScreen.hidden = false;
+  adminScreen.hidden = true;
+  authError.textContent = message || '';
+}
+
+authForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+  if (!email || !password) return;
+
+  authSubmit.disabled = true;
+  authError.textContent = '로그인 중...';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '로그인에 실패했어요.');
+
+    authPassword.value = '';
+    authError.textContent = '';
+    await init();
+  } catch (err) {
+    console.error(err);
+    authError.textContent = err.message;
+  } finally {
+    authSubmit.disabled = false;
+  }
+});
+
 async function init() {
   setStatus('불러오는 중...', '');
 
@@ -177,8 +223,11 @@ async function init() {
   }
 
   if (res.status === 401) {
-    loginNotice.hidden = false;
-    setStatus('로그인이 필요해요.', 'error');
+    showLogin('');
+    return;
+  }
+  if (res.status === 403) {
+    showLogin('이 계정은 관리자가 아니에요. 관리자 이메일로 로그인해주세요.');
     return;
   }
 
@@ -188,6 +237,8 @@ async function init() {
     return;
   }
 
+  authScreen.hidden = true;
+  adminScreen.hidden = false;
   users = data.users || [];
   backupCard.hidden = false;
   refresh();

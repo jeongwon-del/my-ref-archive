@@ -83,22 +83,35 @@
   }
 </style>
 
-<header class="topbar">
-  <div class="account-row">
-    <a class="archive-link" href="/">아카이브로</a>
+<!-- 관리자 로그인 화면 — 관리자 계정으로 확인되기 전까지 이것만 보인다 -->
+<div id="authScreen" class="auth-screen" hidden>
+  <div class="auth-card">
+    <h1 class="auth-logo">관리자</h1>
+
+    <form id="authForm" class="auth-form">
+      <input id="authEmail" type="email" placeholder="관리자 이메일" autocomplete="email" required />
+      <input id="authPassword" type="password" placeholder="비밀번호" autocomplete="current-password" required />
+      <button id="authSubmit" type="submit">로그인</button>
+    </form>
+
+    <p id="authError" class="auth-error"></p>
   </div>
-  <h1>관리자</h1>
-  <p class="archive-name-hint">가입한 사람들을 보고 계정을 정리할 수 있어요</p>
-</header>
+</div>
 
-<main>
-  <p id="adminSummary" class="admin-summary" hidden></p>
-  <p id="adminStatus" class="status"></p>
-  <p id="loginNotice" class="empty-msg" hidden>
-    먼저 <a href="/">로그인</a> 해주세요.
-  </p>
+<div id="adminScreen" hidden>
+  <header class="topbar">
+    <div class="account-row">
+      <a class="archive-link" href="/">아카이브로</a>
+    </div>
+    <h1>관리자</h1>
+    <p class="archive-name-hint">가입한 사람들을 보고 계정을 정리할 수 있어요</p>
+  </header>
 
-  <input id="userSearch" type="text" placeholder="이메일로 찾기" autocomplete="off" hidden />
+  <main>
+    <p id="adminSummary" class="admin-summary" hidden></p>
+    <p id="adminStatus" class="status"></p>
+
+    <input id="userSearch" type="text" placeholder="이메일로 찾기" autocomplete="off" hidden />
 
   <div class="table-wrap" hidden>
     <table class="ref-table">
@@ -114,14 +127,15 @@
     </table>
   </div>
 
-  <div id="backupCard" class="backup-card" hidden>
-    <p class="field-label">전체 데이터 백업</p>
-    <p class="hint-text">가입한 모든 사람의 레퍼런스를 파일 하나로 내려받아요. CSV 는 줄마다 이메일이 붙어서 엑셀이나 구글 시트에서 바로 열려요.</p>
-    <div class="backup-row">
-      <button id="backupJsonBtn" type="button">전체 JSON 백업</button>
-      <button id="backupCsvBtn" type="button">전체 CSV 백업</button>
+    <div id="backupCard" class="backup-card" hidden>
+      <p class="field-label">전체 데이터 백업</p>
+      <p class="hint-text">가입한 모든 사람의 레퍼런스를 파일 하나로 내려받아요. CSV 는 줄마다 이메일이 붙어서 엑셀이나 구글 시트에서 바로 열려요.</p>
+      <div class="backup-row">
+        <button id="backupJsonBtn" type="button">전체 JSON 백업</button>
+        <button id="backupCsvBtn" type="button">전체 CSV 백업</button>
+      </div>
     </div>
-  </div>
-</main>
+  </main>
+</div>
 
 <script src="admin.js"></script>
