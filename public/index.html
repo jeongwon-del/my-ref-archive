@@ -8,6 +8,16 @@
   <div class="auth-card">
     <h1 class="auth-logo">My ref archive</h1>
 
+    <!-- 서버가 카카오로 보냈다가 다시 데려오는 흐름이라, 그냥 주소로 이동하면 된다 (자바스크립트 불필요) -->
+    <a href="/api/auth/kakao" class="kakao-btn">
+      <svg width="17" height="16" viewBox="0 0 17 16" fill="none" aria-hidden="true">
+        <path d="M8.5 1C4.36 1 1 3.64 1 6.9c0 2.1 1.4 3.94 3.5 4.98l-.86 3.16c-.07.26.22.47.45.32l3.79-2.5c.2.02.41.03.62.03 4.14 0 7.5-2.64 7.5-5.99C16 3.64 12.64 1 8.5 1Z" fill="#191919"/>
+      </svg>
+      카카오로 시작하기
+    </a>
+
+    <div class="auth-divider"><span>또는</span></div>
+
     <form id="authForm" class="auth-form">
       <input id="authEmail" type="email" placeholder="이메일" autocomplete="email" required />
       <input id="authPassword" type="password" placeholder="비밀번호 (8자 이상)" autocomplete="current-password" required />

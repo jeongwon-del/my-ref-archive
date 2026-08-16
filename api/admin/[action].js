@@ -1,4 +1,4 @@
-// GET    /api/admin/users              → 가입자 목록 { users: [{ email, id, createdAt, itemCount }] }
+// GET    /api/admin/users              → 가입자 목록 { users: [{ email, provider, label, id, createdAt, itemCount }] }
 // DELETE /api/admin/users?email=...    → 그 계정과 계정의 모든 데이터 삭제
 // POST   /api/admin/reset-password     (body: { email, newPassword }) → 관리자가 남의 비밀번호 재설정
 // GET    /api/admin/export?format=...  → 가입한 모든 사람의 데이터를 JSON/CSV 파일로 백업
@@ -11,6 +11,7 @@ import bcrypt from "bcryptjs";
 import {
   listUsers,
   deleteUserAccount,
+  getUserByEmail,
   getUserById,
   normalizeEmail,
   setUserPassword,
@@ -44,8 +45,10 @@ async function handleUsers(req, res) {
         return res.status(400).json({ error: "지금 로그인한 관리자 계정은 여기서 삭제할 수 없어요." });
       }
 
-      const deleted = await deleteUserAccount(email);
-      if (!deleted) return res.status(404).json({ error: "그 이메일로 가입한 계정을 찾을 수 없어요." });
+      const targetUser = await getUserByEmail(email);
+      if (!targetUser) return res.status(404).json({ error: "그 이메일로 가입한 계정을 찾을 수 없어요." });
+
+      await deleteUserAccount(targetUser);
 
       return res.status(200).json({ ok: true });
     }

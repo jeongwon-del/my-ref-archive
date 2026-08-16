@@ -45,7 +45,7 @@ function renderList(list) {
 
     const emailCell = document.createElement('td');
     emailCell.className = 'col-email';
-    emailCell.textContent = user.email;
+    emailCell.textContent = user.label || user.email;
 
     const joinedCell = document.createElement('td');
     joinedCell.className = 'col-joined';
@@ -58,18 +58,28 @@ function renderList(list) {
     const manageCell = document.createElement('td');
     manageCell.className = 'col-manage';
 
-    const resetBtn = document.createElement('button');
-    resetBtn.className = 'reset-btn';
-    resetBtn.textContent = '비밀번호 재설정';
-    resetBtn.addEventListener('click', () => resetPassword(user.email));
+    // 관리 기능(재설정·삭제)은 아직 이메일 계정만 지원한다. 카카오 계정은 바꿀 비밀번호도 없고
+    // 서버의 삭제 API 도 이메일로 사람을 찾으니, 여기서는 표시만 하고 버튼을 달지 않는다.
+    if (user.provider === 'kakao') {
+      const note = document.createElement('span');
+      note.style.color = 'var(--gray)';
+      note.style.fontSize = '12px';
+      note.textContent = '카카오 계정';
+      manageCell.appendChild(note);
+    } else {
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'reset-btn';
+      resetBtn.textContent = '비밀번호 재설정';
+      resetBtn.addEventListener('click', () => resetPassword(user.email));
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.textContent = '삭제';
-    deleteBtn.addEventListener('click', () => deleteUser(user.email));
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.textContent = '삭제';
+      deleteBtn.addEventListener('click', () => deleteUser(user.email));
 
-    manageCell.appendChild(resetBtn);
-    manageCell.appendChild(deleteBtn);
+      manageCell.appendChild(resetBtn);
+      manageCell.appendChild(deleteBtn);
+    }
 
     row.appendChild(emailCell);
     row.appendChild(joinedCell);
@@ -79,10 +89,14 @@ function renderList(list) {
   });
 }
 
-// 검색은 서버에 다시 묻지 않고, 이미 받아둔 users 배열에서 이메일만 걸러낸다.
+// 검색은 서버에 다시 묻지 않고, 이미 받아둔 users 배열에서 화면에 보이는 이름만 걸러낸다.
 function applyFilter() {
   const term = searchInput.value.trim().toLowerCase();
-  renderList(term ? users.filter(user => user.email.toLowerCase().includes(term)) : users);
+  renderList(
+    term
+      ? users.filter(user => (user.label || user.email || '').toLowerCase().includes(term))
+      : users
+  );
 }
 
 // users 가 바뀔 때마다(처음 로드, 삭제 후) 요약·표시 여부·표를 한 번에 다시 맞춘다.

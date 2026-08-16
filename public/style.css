@@ -58,6 +58,43 @@ body {
   color: var(--accent);
 }
 
+/* 카카오 공식 색(#FEE500)과 글자색은 브랜드 가이드에 정해진 값이라 변수로 빼지 않는다. */
+.kakao-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 22px;
+  border-radius: var(--radius-pill);
+  background: #FEE500;
+  color: #191919;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: opacity 0.15s;
+}
+
+.kakao-btn:hover { opacity: 0.85; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  color: var(--gray);
+  font-size: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;

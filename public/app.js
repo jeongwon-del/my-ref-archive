@@ -613,10 +613,10 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 });
 
 // ---------- init ----------
-async function enterArchive(email) {
+async function enterArchive(displayLabel) {
   authScreen.hidden = true;
   appScreen.hidden = false;
-  accountEmail.textContent = email || '';
+  accountEmail.textContent = displayLabel || '';
 
   try {
     await loadSettings();
@@ -637,14 +637,20 @@ async function enterArchive(email) {
 
 async function init() {
   applyAuthMode();
+
+  // 카카오 로그인이 실패하면 서버가 ?authError= 에 사연을 담아 이 페이지로 되돌려보낸다.
+  // 한 번 보여준 뒤에는 주소에서 지워서, 새로고침해도 다시 뜨지 않게 한다.
+  const kakaoError = new URLSearchParams(location.search).get('authError') || '';
+  if (kakaoError) history.replaceState(null, '', location.pathname);
+
   try {
     const res = await fetch('/api/auth/me');
     if (!res.ok) {
-      showAuthScreen('');
+      showAuthScreen(kakaoError);
       return;
     }
     const data = await res.json();
-    await enterArchive(data.email);
+    await enterArchive(data.label || data.email);
   } catch (err) {
     console.error(err);
     showAuthScreen('서버에 연결하지 못했어요. 잠시 후 새로고침해주세요.');

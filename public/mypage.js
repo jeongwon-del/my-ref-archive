@@ -13,11 +13,15 @@ const exportCard = document.getElementById('exportCard');
 const dangerCard = document.getElementById('dangerCard');
 const accountCard = document.getElementById('accountCard');
 const accountEmail = document.getElementById('accountEmail');
+const passwordSection = document.getElementById('passwordSection');
 const passwordForm = document.getElementById('passwordForm');
 const currentPassword = document.getElementById('currentPassword');
 const newPassword = document.getElementById('newPassword');
 const newPasswordConfirm = document.getElementById('newPasswordConfirm');
 const submitBtn = document.getElementById('submitBtn');
+
+// 'email' 또는 'kakao' — 비밀번호가 있는 계정인지에 따라 화면과 탈퇴 절차가 달라진다.
+let accountProvider = 'email';
 
 function setStatus(text, type) {
   statusEl.textContent = text;
@@ -114,8 +118,13 @@ document.getElementById('exportCsvBtn').addEventListener('click', () => {
 document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
   if (!confirm('정말 탈퇴할까요? 계정과 저장한 레퍼런스가 모두 영구히 삭제되고, 되돌릴 수 없어요.')) return;
 
-  const password = prompt('확인을 위해 현재 비밀번호를 입력하세요.');
-  if (!password) return;
+  // 카카오 계정은 확인할 비밀번호가 없어서 위 확인창까지가 전부다.
+  let body = {};
+  if (accountProvider !== 'kakao') {
+    const password = prompt('확인을 위해 현재 비밀번호를 입력하세요.');
+    if (!password) return;
+    body = { password };
+  }
 
   setStatus('탈퇴 처리 중...', '');
 
@@ -123,7 +132,7 @@ document.getElementById('deleteAccountBtn').addEventListener('click', async () =
     const res = await fetch('/api/auth/delete-account', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '탈퇴에 실패했어요.');
@@ -166,7 +175,9 @@ async function init() {
     return;
   }
 
-  accountEmail.textContent = data.email;
+  accountProvider = data.provider || 'email';
+  accountEmail.textContent = data.label || data.email;
+  if (accountProvider === 'kakao') passwordSection.hidden = true;
   accountCard.hidden = false;
   exportCard.hidden = false;
   dangerCard.hidden = false;

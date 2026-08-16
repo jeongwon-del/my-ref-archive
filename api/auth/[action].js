@@ -1,7 +1,7 @@
 // POST /api/auth/signup          (body: { email, password }) → 계정 생성 + 로그인 쿠키 발급
 // POST /api/auth/login           (body: { email, password }) → 로그인 쿠키 발급
 // POST /api/auth/logout          → 세션 쿠키 삭제
-// GET  /api/auth/me              → 로그인 상태면 { email }, 아니면 401.
+// GET  /api/auth/me              → 로그인 상태면 { email, provider, label }, 아니면 401.
 // POST /api/auth/change-password (body: { currentPassword, newPassword }) → 본인이 자기 비밀번호 변경
 // POST /api/auth/delete-account  (body: { password }) → 본인이 계정+데이터 삭제
 //
@@ -118,7 +118,12 @@ async function handleMe(req, res) {
     const user = await getUserById(userId);
     if (!user) return res.status(401).json({ error: "로그인이 필요해요." });
 
-    return res.status(200).json({ email: user.email });
+    return res.status(200).json({
+      email: user.email || null,
+      provider: user.provider || "email",
+      // 카카오 계정은 이메일이 없으니 화면에 띄울 이름을 대신 내려준다.
+      label: user.email || `카카오 · ${user.nickname || "이름 없음"}`,
+    });
   } catch (err) {
     console.error("me error:", err);
     return res.status(500).json({ error: "확인 중 오류가 발생했어요: " + err.message });
@@ -137,6 +142,9 @@ async function handleChangePassword(req, res) {
 
     const user = await getUserById(userId);
     if (!user) return res.status(401).json({ error: "로그인이 필요해요." });
+    if (!user.passwordHash) {
+      return res.status(400).json({ error: "카카오 로그인 계정은 비밀번호가 없어요." });
+    }
 
     const currentPassword =
       typeof req.body?.currentPassword === "string" ? req.body.currentPassword : "";
@@ -176,15 +184,18 @@ async function handleDeleteAccount(req, res) {
     const user = await getUserById(userId);
     if (!user) return res.status(401).json({ error: "로그인이 필요해요." });
 
-    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    // 카카오 계정은 확인할 비밀번호가 아예 없다. 브라우저의 확인창이 유일한 관문인 셈인데,
+    // 이메일을 받지 않기로 한 이상 본인 확인을 더 걸 수단이 없어서 이대로 둔다.
+    if (user.passwordHash) {
+      const password = typeof req.body?.password === "string" ? req.body.password : "";
 
-    const matches = await bcrypt.compare(password, user.passwordHash);
-    if (!matches) {
-      return res.status(401).json({ error: "비밀번호가 올바르지 않아요." });
+      const matches = await bcrypt.compare(password, user.passwordHash);
+      if (!matches) {
+        return res.status(401).json({ error: "비밀번호가 올바르지 않아요." });
+      }
     }
 
-    const deleted = await deleteUserAccount(user.email);
-    if (!deleted) return res.status(404).json({ error: "계정을 찾을 수 없어요." });
+    await deleteUserAccount(user);
 
     res.setHeader("Set-Cookie", clearSessionCookie());
     return res.status(200).json({ ok: true });

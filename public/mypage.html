@@ -114,13 +114,16 @@
     <p class="field-label">로그인한 계정</p>
     <p id="accountEmail" class="field-value"></p>
 
-    <p class="field-label">비밀번호 변경</p>
-    <form id="passwordForm" class="auth-form">
-      <input id="currentPassword" type="password" placeholder="현재 비밀번호" autocomplete="current-password" required />
-      <input id="newPassword" type="password" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password" required />
-      <input id="newPasswordConfirm" type="password" placeholder="새 비밀번호 확인" autocomplete="new-password" required />
-      <button id="submitBtn" type="submit">비밀번호 변경</button>
-    </form>
+    <!-- 카카오 계정에는 바꿀 비밀번호가 없어서 mypage.js 가 이 묶음을 통째로 숨긴다 -->
+    <div id="passwordSection">
+      <p class="field-label">비밀번호 변경</p>
+      <form id="passwordForm" class="auth-form">
+        <input id="currentPassword" type="password" placeholder="현재 비밀번호" autocomplete="current-password" required />
+        <input id="newPassword" type="password" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password" required />
+        <input id="newPasswordConfirm" type="password" placeholder="새 비밀번호 확인" autocomplete="new-password" required />
+        <button id="submitBtn" type="submit">비밀번호 변경</button>
+      </form>
+    </div>
   </div>
 
   <div id="exportCard" class="auth-card" hidden>
