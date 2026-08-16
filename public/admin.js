@@ -58,28 +58,20 @@ function renderList(list) {
     const manageCell = document.createElement('td');
     manageCell.className = 'col-manage';
 
-    // 관리 기능(재설정·삭제)은 아직 이메일 계정만 지원한다. 카카오 계정은 바꿀 비밀번호도 없고
-    // 서버의 삭제 API 도 이메일로 사람을 찾으니, 여기서는 표시만 하고 버튼을 달지 않는다.
-    if (user.provider === 'kakao') {
-      const note = document.createElement('span');
-      note.style.color = 'var(--gray)';
-      note.style.fontSize = '12px';
-      note.textContent = '카카오 계정';
-      manageCell.appendChild(note);
-    } else {
+    // 카카오 계정은 비밀번호가 없어서 재설정 버튼은 안 달고, 삭제만 지원한다.
+    if (user.provider !== 'kakao') {
       const resetBtn = document.createElement('button');
       resetBtn.className = 'reset-btn';
       resetBtn.textContent = '비밀번호 재설정';
       resetBtn.addEventListener('click', () => resetPassword(user.email));
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'delete-btn';
-      deleteBtn.textContent = '삭제';
-      deleteBtn.addEventListener('click', () => deleteUser(user.email));
-
       manageCell.appendChild(resetBtn);
-      manageCell.appendChild(deleteBtn);
     }
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.textContent = '삭제';
+    deleteBtn.addEventListener('click', () => deleteUser(user));
+    manageCell.appendChild(deleteBtn);
 
     row.appendChild(emailCell);
     row.appendChild(joinedCell);
@@ -126,17 +118,22 @@ document.getElementById('backupCsvBtn').addEventListener('click', () => {
   location.href = '/api/admin/export?format=csv';
 });
 
-async function deleteUser(email) {
-  if (!confirm(`${email} 계정을 삭제할까요? 이 사람이 저장한 레퍼런스도 모두 함께 사라지고, 되돌릴 수 없어요.`)) return;
+async function deleteUser(user) {
+  const label = user.label || user.email;
+  if (!confirm(`${label} 계정을 삭제할까요? 이 사람이 저장한 레퍼런스도 모두 함께 사라지고, 되돌릴 수 없어요.`)) return;
+
+  const query = user.provider === 'kakao'
+    ? `kakaoId=${encodeURIComponent(user.kakaoId)}`
+    : `email=${encodeURIComponent(user.email)}`;
 
   try {
-    const res = await fetch(`/api/admin/users?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+    const res = await fetch(`/api/admin/users?${query}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '삭제에 실패했어요.');
 
-    users = users.filter(u => u.email !== email);
+    users = users.filter(u => u.id !== user.id);
     refresh();
-    setStatus(`${email} 계정을 삭제했어요.`, 'ok');
+    setStatus(`${label} 계정을 삭제했어요.`, 'ok');
   } catch (err) {
     console.error(err);
     setStatus(err.message, 'error');

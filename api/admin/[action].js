@@ -1,5 +1,6 @@
-// GET    /api/admin/users              → 가입자 목록 { users: [{ email, provider, label, id, createdAt, itemCount }] }
-// DELETE /api/admin/users?email=...    → 그 계정과 계정의 모든 데이터 삭제
+// GET    /api/admin/users                  → 가입자 목록 { users: [{ email, provider, label, kakaoId, id, createdAt, itemCount }] }
+// DELETE /api/admin/users?email=...        → 그 이메일 계정과 모든 데이터 삭제
+// DELETE /api/admin/users?kakaoId=...      → 그 카카오 계정과 모든 데이터 삭제
 // POST   /api/admin/reset-password     (body: { email, newPassword }) → 관리자가 남의 비밀번호 재설정
 // GET    /api/admin/export?format=...  → 가입한 모든 사람의 데이터를 JSON/CSV 파일로 백업
 //
@@ -12,6 +13,7 @@ import {
   listUsers,
   deleteUserAccount,
   getUserByEmail,
+  getUserByKakaoId,
   getUserById,
   normalizeEmail,
   setUserPassword,
@@ -37,16 +39,21 @@ async function handleUsers(req, res) {
 
     if (req.method === "DELETE") {
       const email = normalizeEmail(req.query.email);
-      if (!email) return res.status(400).json({ error: "email이 필요해요." });
-
-      // 실수로 자기 관리자 계정을 지워서 잠기는 걸 막는다.
-      const admin = await getUserById(adminId);
-      if (email === normalizeEmail(admin.email)) {
-        return res.status(400).json({ error: "지금 로그인한 관리자 계정은 여기서 삭제할 수 없어요." });
+      const kakaoId = typeof req.query.kakaoId === "string" ? req.query.kakaoId : "";
+      if (!email && !kakaoId) {
+        return res.status(400).json({ error: "email 또는 kakaoId가 필요해요." });
       }
 
-      const targetUser = await getUserByEmail(email);
-      if (!targetUser) return res.status(404).json({ error: "그 이메일로 가입한 계정을 찾을 수 없어요." });
+      // 관리자 계정은 항상 이메일 계정이라, 카카오 쪽 삭제 요청에는 이 확인이 필요 없다.
+      if (email) {
+        const admin = await getUserById(adminId);
+        if (email === normalizeEmail(admin.email)) {
+          return res.status(400).json({ error: "지금 로그인한 관리자 계정은 여기서 삭제할 수 없어요." });
+        }
+      }
+
+      const targetUser = email ? await getUserByEmail(email) : await getUserByKakaoId(kakaoId);
+      if (!targetUser) return res.status(404).json({ error: "그 계정을 찾을 수 없어요." });
 
       await deleteUserAccount(targetUser);
 
